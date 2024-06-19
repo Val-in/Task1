@@ -7,45 +7,53 @@ namespace Task1
     {
         public static void Main(string[] args)
         {
-            Console.Write("Введите путь к нужной папке: ");
+            Console.Write("Enter the path to the Folder: ");
             string folderPath = Console.ReadLine();
 
-            if (string.IsNullOrWhiteSpace(folderPath) == false)
+            if (!string.IsNullOrWhiteSpace(folderPath))
             {
                 if (Directory.Exists(folderPath))
                 {
-                    CleanDirectory(folderPath);
+                    CleanFolder(folderPath);
+                    Console.WriteLine("Cleaning completed.");
                 }
                 else
                 {
-                    Console.WriteLine("Папки по такому пути не существует");
+                    Console.WriteLine("Folder with this path does not exist.");
                 }
             }
             else
             {
-                Console.WriteLine("Вы ввели некорректный путь к нужной папке");
+                Console.WriteLine("You entered incorrect folder path.");
             }
         }
 
-        public static void CleanDirectory(string folderPath)
+        public static void CleanFolder(string folderPath)
         {
-            DateTime unusedFolder = DateTime.Now - TimeSpan.FromMinutes(30);
+            DateTime unusedTime = DateTime.Now - TimeSpan.FromMinutes(30);
             string[] filePaths = Directory.GetFiles(folderPath);
             
             foreach (string filePath in filePaths)
             {
-                DateTime lastAccessTime = File.GetLastAccessTime(filePath);
-                Console.WriteLine($"File: {filePath}, Last Access Time: {lastAccessTime}");
-                if (lastAccessTime < unusedFolder)
+                try
                 {
-                    Console.WriteLine($"Deleting file: {filePath}");
-                    File.Delete(filePath);
-                    Console.WriteLine();
+                    DateTime lastWriteTime = File.GetLastWriteTime(filePath);
+                    Console.WriteLine($"File: {filePath}, Last Access Time: {lastWriteTime}");
+                    if (lastWriteTime < unusedTime)
+                    {
+                        Console.WriteLine($"Deleting file: {filePath}");
+                        File.Delete(filePath);
+                        Console.WriteLine();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"{filePath} was used within 30 mins.");
+                        Console.WriteLine();
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"{filePath} was used within 30 mins.");
-                    Console.WriteLine();
+                    Console.WriteLine($"Failed to delete file: {filePath}. Error: {ex.Message}");
                 }
             }
 
@@ -53,21 +61,24 @@ namespace Task1
 
             foreach (string directoryPath in directoryPaths)
             {
-                Console.WriteLine(directoryPath);
-                Console.WriteLine();
-            }
-
-            foreach (string directoryPath in directoryPaths)
-            {
-                DateTime lastAccessTime = Directory.GetLastAccessTime(directoryPath);
-
-                if (lastAccessTime < unusedFolder)
+                try
                 {
-                    Directory.Delete(directoryPath, true);
+                    CleanFolder(directoryPath);
+         
+                    if (Directory.GetFiles(directoryPath).Length == 0 && Directory.GetDirectories(directoryPath).Length == 0)
+                    {
+                        DateTime lastWriteTime = Directory.GetLastWriteTime(directoryPath);
+                        if (lastWriteTime < unusedTime)
+                        {
+                            Console.WriteLine($"Deleting directory: {directoryPath}");
+                            Directory.Delete(directoryPath, true);
+                            Console.WriteLine();
+                        }
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    CleanDirectory(directoryPath);
+                    Console.WriteLine($"Failed to delete directory: {directoryPath}. Error: {ex.Message}");
                 }
             }
         }
